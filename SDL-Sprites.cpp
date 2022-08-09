@@ -272,18 +272,18 @@ public:
     SDL_Surface* currentBackground = NULL;
     SDL_Texture* backgroundTexture = NULL;
     SDL_Texture* grassTexture = NULL;
-    SDL_Texture* wallTexture = NULL; 
+    SDL_Texture* wallTexture = NULL;
     SDL_Renderer* renderer;
     SDL_Rect backgroundRect;
 
     Background(SDL_Renderer* _renderer)
-    { 
+    {
         renderer = _renderer;
         backgroundRect.x = 0;
         backgroundRect.y = 0;
         backgroundRect.w = 640;
         backgroundRect.h = 480;
-      
+
     }
 
     void update()
@@ -302,10 +302,17 @@ public:
         {
             backgroundTexture = SDL_CreateTextureFromSurface(renderer, grassSurface);
         }
+        
+
         // Free the loaded surfaces
         SDL_FreeSurface(currentBackground);
         SDL_FreeSurface(grassSurface);
         SDL_FreeSurface(wallSurface);
+    }
+
+    void update(SDL_Renderer* _renderer)
+    {
+        SDL_RenderCopy(_renderer, backgroundTexture, NULL, &backgroundRect);
     }
 };
 
@@ -547,7 +554,8 @@ public:
             {
                 _soundEngine.playSound("playerAttack");
                 playerAttackDelay = playerAttackCooldown;
-               
+                Sprite(_renderer,"slime", this->spriteRect.x, this->spriteRect.y);
+                
                 
             }
             
@@ -864,6 +872,9 @@ public:
         return absolutePosition;
     }
 };
+
+
+
 
 
 int main(int argc, char** args)
