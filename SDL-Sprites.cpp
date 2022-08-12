@@ -347,6 +347,9 @@ public:
     int max_y = 480;
     bool playerControl = false;
     bool isMoving = false;
+    bool updateActive = false;
+    bool collidable = true;
+    bool isColliding = false;
     string spriteType = "";
     string tag = "";
     
@@ -369,14 +372,12 @@ public:
         spriteRect.w = spriteSize;
         spriteRect.h = spriteSize;
         spriteType = _spriteType;
-
         
-
-        
-
+  
         //create texture from surface for slime
         if (_spriteType == "slime")
         {
+            tag = "slime";
             //Load graphics to surface
             SDL_Surface* slimeSurface_down  = IMG_Load("graphics/slime_d.png");
             SDL_Surface* slimeSurface_up    = IMG_Load("graphics/slime_u.png");
@@ -398,6 +399,7 @@ public:
          
         if (_spriteType == "npc")
         {
+            tag = "player";
             //Load graphics to surface
             SDL_Surface* playerSurface_down  = IMG_Load("graphics/player_d.png");
             SDL_Surface* playerSurface_up    = IMG_Load("graphics/player_u.png");
@@ -430,8 +432,6 @@ public:
             //free up surfaces
             SDL_FreeSurface(projectileSurface);
           
-
-
         }
         
 
@@ -554,9 +554,7 @@ public:
             {
                 _soundEngine.playSound("playerAttack");
                 playerAttackDelay = playerAttackCooldown;
-                Sprite(_renderer,"slime", this->spriteRect.x, this->spriteRect.y);
-                
-                
+
             }
             
             moveDirection = _controlInput.getDirection();
@@ -695,7 +693,8 @@ public:
 
     void onCollision(string _tag)
     {
-
+        cout << "I " << tag << " have collided with " << _tag << " at X:" << spriteRect.x << " Y:" << spriteRect.y <<  endl;
+        isColliding = true;
     }
 };
 
@@ -705,11 +704,15 @@ class SpriteBatch
 public:
     vector <Sprite> * spriteMatrix = new vector<Sprite>;
     Sprite player;
+    Sprite currentSprite;
     unsigned int position = 0;
     unsigned int currentUpdatePosition = 0;
     int resolution_x = 640;
     int resolution_y = 480;
+    bool collision_x = false;
+    bool collision_y = false;
     bool paused = false;
+       
 
     //referances to the needed objects.
     SDL_Renderer* renderer ;
@@ -777,7 +780,41 @@ public:
             for (unsigned int x = 0; x < spriteMatrix->size(); x++)
             {
                 currentUpdatePosition = x;
+                spriteMatrix->at(x).updateActive = true;
                 spriteMatrix->at(x).update(renderer,_controlInput,soundEngine);
+                currentSprite = spriteMatrix->at(x);
+                collision_x = false;
+                collision_y = false;
+                //iterate through batch looking for collisions with currrentSprite
+                for (unsigned x = 0; x < spriteMatrix->size(); x++)
+                {
+                    if (spriteMatrix->at(x).updateActive == false)
+
+                    {
+                        if ((currentSprite.spriteRect.x + currentSprite.spriteSize) >= (spriteMatrix->at(x).spriteRect.x) &&
+                            (currentSprite.spriteRect.x) <= (spriteMatrix->at(x).spriteRect.x + spriteMatrix->at(x).spriteSize))
+                        {
+                            collision_x = true;
+                        }
+
+                        if ((currentSprite.spriteRect.y + currentSprite.spriteSize) >= (spriteMatrix->at(x).spriteRect.y) &&
+                            (currentSprite.spriteRect.y) <= (spriteMatrix->at(x).spriteRect.y + spriteMatrix->at(x).spriteSize))
+                        {
+                            collision_y = true;
+                        }
+
+                        if (collision_x == true && collision_y == true)
+                        {
+
+                            currentSprite.onCollision(spriteMatrix->at(x).tag);
+                            spriteMatrix->at(x).onCollision(currentSprite.tag);
+                        }
+
+                    }
+                }
+
+             spriteMatrix->at(x).updateActive = false;
+
             }
         }
     }
@@ -793,6 +830,8 @@ public:
         //return number of sprites in batch
         return spriteMatrix->size();
     }
+
+
 };
 
 
@@ -912,7 +951,7 @@ int main(int argc, char** args)
     SpriteBatch spriteBatch(renderer,soundEngine,controlInput);
     
     //generate a bunch of slimes and add them to the render batch
-    spriteBatch.createRandomSprite("slime", 20);
+    spriteBatch.createRandomSprite("slime", 3);
 
     //generate a player
     Sprite player(renderer, "npc", 64, 64);
